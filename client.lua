@@ -19,6 +19,25 @@ Citizen.CreateThread(function()
     end
 end)
 
+-- Register Target
+Citizen.CreateThread(function()
+    if Config.UseTarget then
+        Citizen.Wait(1000)
+        if GetResourceState(Config.TargetResource) == "started" then
+            exports[Config.TargetResource]:AddTargetModel({ GetHashKey(Config.NPC.Model) }, {
+                options = {
+                    {
+                        event = "rossracing:buyTicket",
+                        label = "Comprar Ticket ($"..Config.TicketPrice..")",
+                        tunnel = "server"
+                    }
+                },
+                Distance = 2.5
+            })
+        end
+    end
+end)
+
 -- Thread NPC Manager
 Citizen.CreateThread(function()
     local npcConfig = Config.NPC
@@ -38,6 +57,7 @@ Citizen.CreateThread(function()
                 end
 
                 ped = CreatePed(4, GetHashKey(npcConfig.Model), npcConfig.Coords.x, npcConfig.Coords.y, npcConfig.Coords.z, npcConfig.Coords.w, false, true)
+                SetEntityAsMissionEntity(ped, true, true)
                 SetEntityHeading(ped, npcConfig.Coords.w)
                 FreezeEntityPosition(ped, true)
                 SetEntityInvincible(ped, true)
@@ -49,7 +69,7 @@ Citizen.CreateThread(function()
                 TaskPlayAnim(ped, npcConfig.AnimDict, npcConfig.AnimName, 8.0, 0.0, -1, 1, 0, 0, 0, 0)
             end
 
-            if dist < 3.0 then
+            if dist < 3.0 and not Config.UseTarget then
                 sleep = 0
                 DrawText3D(npcConfig.Coords.x, npcConfig.Coords.y, npcConfig.Coords.z + 2.0, string.format(Config.Lang['buy_ticket_help'], Config.TicketPrice))
                 if IsControlJustPressed(0, 38) then -- E

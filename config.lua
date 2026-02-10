@@ -3,6 +3,10 @@ Config = {}
 -- Integração com Framework (Adapte conforme sua base: ESX, QBCore, VRP, Creative, etc)
 Config.Framework = "custom" -- "esx", "qbcore", "vrp", "custom"
 
+-- Sistema de Target (Olho)
+Config.UseTarget = true -- Se true, usa o sistema de target (ex: ox_target, qb-target ou custom da base)
+Config.TargetResource = "target" -- Nome do resource de target da base
+
 -- Configurações Gerais
 Config.Debug = false -- Ativar prints de debug
 Config.GlobalCooldown = 5 * 60 -- Tempo em segundos (5 minutos) de espera após o fim de uma corrida
