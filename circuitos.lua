@@ -9,11 +9,11 @@ Circuitos['sample_race'] = {
     startCoords = vector4(189.95, -3024.16, 5.67, 268.0), -- Onde o player deve estar para iniciar (x,y,z,h)
     spawnCoords = vector4(189.95, -3024.16, 5.67, 268.0), -- Onde o carro será teleportado/posicionado ao iniciar
     checkpoints = {
-        { coords = vector3(143.23, -3059.97, 5.9), type = 1 }, -- Checkpoint normal
-        { coords = vector3(28.53, -2975.38, 5.82), type = 1 },
-        { coords = vector3(-154.67, -2930.64, 5.95), type = 1 },
-        { coords = vector3(-342.14, -2837.76, 5.76), type = 1 },
+        { coords = vector3(182.15, -2983.26, 5.9), type = 1 }, -- Checkpoint normal
+        { coords = vector3(165.84, -2789.97, 6.0), type = 1 },
+        { coords = vector3(341.52, -2664.83, 20.32), type = 1 },
+        { coords = vector3(1261.88, -2564.51, 42.71), type = 1 },
         -- Adicione mais coordenadas...
-        { coords = vector3(-181.99, -2534.82, 6.0), type = 1 }, -- Último checkpoint
+        { coords = vector3(1607.27, -2389.56, 91.34), type = 1 }, -- Último checkpoint
     }
 }
