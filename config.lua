@@ -25,10 +25,10 @@ Config.TicketPaymentType = "dirty_money" -- Tipo de dinheiro: "cash", "bank", "d
 
 -- NPC Vendedor de Ticket
 Config.NPC = {
-    Model = "a_m_y_business_02", -- Modelo do NPC
-    Coords = vector4(190.58, -3052.75, 5.0, 270.0), -- Coordenadas (x, y, z, h)
-    AnimDict = "amb@world_human_smoking@male@male_a@base",
-    AnimName = "base"
+    Model = "g_m_y_mexgoon_01", -- Modelo do NPC (Estilo Street/Ilegal)
+    Coords = vector4(-486.87, -1761.87, 18.10, 90.71), -- Coordenadas (x, y, z, h)
+    AnimDict = "anim@heists@heist_corona@single_team",
+    AnimName = "single_team_loop_boss"
 }
 
 -- Recompensas

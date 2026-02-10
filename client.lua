@@ -19,23 +19,10 @@ Citizen.CreateThread(function()
     end
 end)
 
--- Thread NPC
+-- Thread NPC Manager
 Citizen.CreateThread(function()
     local npcConfig = Config.NPC
-    RequestModel(GetHashKey(npcConfig.Model))
-    while not HasModelLoaded(GetHashKey(npcConfig.Model)) do
-        Wait(1)
-    end
-
-    local ped = CreatePed(4, GetHashKey(npcConfig.Model), npcConfig.Coords.x, npcConfig.Coords.y, npcConfig.Coords.z, npcConfig.Coords.w, false, true)
-    SetEntityHeading(ped, npcConfig.Coords.w)
-    FreezeEntityPosition(ped, true)
-    SetEntityInvincible(ped, true)
-    SetBlockingOfNonTemporaryEvents(ped, true)
-    
-    RequestAnimDict(npcConfig.AnimDict)
-    while not HasAnimDictLoaded(npcConfig.AnimDict) do Wait(1) end
-    TaskPlayAnim(ped, npcConfig.AnimDict, npcConfig.AnimName, 8.0, 0.0, -1, 1, 0, 0, 0, 0)
+    local ped = nil
 
     while true do
         local sleep = 1000
@@ -43,13 +30,39 @@ Citizen.CreateThread(function()
         local plyCoords = GetEntityCoords(plyPed)
         local dist = #(plyCoords - vector3(npcConfig.Coords.x, npcConfig.Coords.y, npcConfig.Coords.z))
 
-        if dist < 3.0 then
-            sleep = 0
-            DrawText3D(npcConfig.Coords.x, npcConfig.Coords.y, npcConfig.Coords.z + 2.0, string.format(Config.Lang['buy_ticket_help'], Config.TicketPrice))
-            if IsControlJustPressed(0, 38) then -- E
-                TriggerServerEvent('rossracing:buyTicket')
+        if dist < 50.0 then
+            if not DoesEntityExist(ped) then
+                RequestModel(GetHashKey(npcConfig.Model))
+                while not HasModelLoaded(GetHashKey(npcConfig.Model)) do
+                    Wait(1)
+                end
+
+                ped = CreatePed(4, GetHashKey(npcConfig.Model), npcConfig.Coords.x, npcConfig.Coords.y, npcConfig.Coords.z, npcConfig.Coords.w, false, true)
+                SetEntityHeading(ped, npcConfig.Coords.w)
+                FreezeEntityPosition(ped, true)
+                SetEntityInvincible(ped, true)
+                SetBlockingOfNonTemporaryEvents(ped, true)
+                SetPedDefaultComponentVariation(ped)
+                
+                RequestAnimDict(npcConfig.AnimDict)
+                while not HasAnimDictLoaded(npcConfig.AnimDict) do Wait(1) end
+                TaskPlayAnim(ped, npcConfig.AnimDict, npcConfig.AnimName, 8.0, 0.0, -1, 1, 0, 0, 0, 0)
+            end
+
+            if dist < 3.0 then
+                sleep = 0
+                DrawText3D(npcConfig.Coords.x, npcConfig.Coords.y, npcConfig.Coords.z + 2.0, string.format(Config.Lang['buy_ticket_help'], Config.TicketPrice))
+                if IsControlJustPressed(0, 38) then -- E
+                    TriggerServerEvent('rossracing:buyTicket')
+                end
+            end
+        else
+            if DoesEntityExist(ped) then
+                DeleteEntity(ped)
+                ped = nil
             end
         end
+
         Citizen.Wait(sleep)
     end
 end)
