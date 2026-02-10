@@ -3,6 +3,22 @@ local raceBlips = {}
 local explosionTimer = 0
 local isExplosionActive = false
 
+-- Thread para Criar Blips no Mapa (Circuitos)
+Citizen.CreateThread(function()
+    if Config.Blip.Enabled then
+        for name, circuit in pairs(Circuitos) do
+            local blip = AddBlipForCoord(circuit.startCoords.x, circuit.startCoords.y, circuit.startCoords.z)
+            SetBlipSprite(blip, Config.Blip.Sprite)
+            SetBlipColour(blip, Config.Blip.Color)
+            SetBlipScale(blip, Config.Blip.Scale)
+            SetBlipAsShortRange(blip, true)
+            BeginTextCommandSetBlipName("STRING")
+            AddTextComponentString(Config.Blip.Name .. " - " .. circuit.name)
+            EndTextCommandSetBlipName(blip)
+        end
+    end
+end)
+
 -- Thread NPC
 Citizen.CreateThread(function()
     local npcConfig = Config.NPC
@@ -176,6 +192,13 @@ function StartRaceLogic()
             end
 
             -- Verificar Tempo Limite
+            local timeElapsed = GetGameTimer() - currentRace.startTime
+            local timeRemaining = math.ceil((currentRace.maxTime - timeElapsed) / 1000)
+            if timeRemaining < 0 then timeRemaining = 0 end
+            
+            -- Desenhar Timer na Tela
+            Draw2DText(0.5, 0.9, "~y~TEMPO RESTANTE:~w~ " .. timeRemaining .. "s", 0.6)
+
             if (GetGameTimer() - currentRace.startTime) > currentRace.maxTime then
                 Config.ShowNotification(Config.Lang['race_failed'])
                 -- Tempo acabou: Explodir
@@ -230,4 +253,20 @@ function DrawText3D(x, y, z, text)
         AddTextComponentString(text)
         DrawText(_x, _y)
     end
+end
+
+-- Helper Text 2D (Novo)
+function Draw2DText(x, y, text, scale)
+    SetTextFont(4)
+    SetTextProportional(1)
+    SetTextScale(scale, scale)
+    SetTextColour(255, 255, 255, 255)
+    SetTextDropShadow(0, 0, 0, 0, 255)
+    SetTextEdge(1, 0, 0, 0, 255)
+    SetTextDropShadow()
+    SetTextOutline()
+    SetTextEntry("STRING")
+    SetTextCentre(1)
+    AddTextComponentString(text)
+    DrawText(x, y)
 end

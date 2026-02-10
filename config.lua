@@ -9,6 +9,15 @@ Config.GlobalCooldown = 5 * 60 -- Tempo em segundos (5 minutos) de espera após 
 Config.ExplosionTimer = 5 -- Tempo em segundos para explodir o carro se sair dele
 Config.StartCountdown = 10 -- Contagem regressiva para iniciar a corrida
 
+-- Blips no Mapa
+Config.Blip = {
+    Enabled = true,
+    Sprite = 315, -- 315 = Bandeira de Corrida
+    Color = 1, -- 1 = Vermelho
+    Scale = 0.8,
+    Name = "Corrida Ilegal"
+}
+
 -- Item Ticket
 Config.TicketItem = "race_ticket" -- Nome do item no inventário
 Config.TicketPrice = 1000 -- Preço do ticket
