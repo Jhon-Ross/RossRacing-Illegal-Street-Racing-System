@@ -237,9 +237,26 @@ function StartRaceLogic()
 
             if (GetGameTimer() - currentRace.startTime) > currentRace.maxTime then
                 Config.ShowNotification(Config.Lang['race_failed'])
+                Config.ShowNotification("SAIA DO VEÍCULO! EXPLOSÃO EM 5 SEGUNDOS!")
+                
+                -- Tempo extra para fugir
+                local failTimer = 5
+                while failTimer > 0 do
+                    Config.ShowNotification("EXPLOSÃO EM " .. failTimer .. "s")
+                    Citizen.Wait(1000)
+                    failTimer = failTimer - 1
+                end
+
                 -- Tempo acabou: Explodir
-                AddExplosion(GetEntityCoords(veh), 2, 1.0, true, false, 1.0)
-                SetEntityHealth(plyPed, 0)
+                if currentRace and currentRace.vehicle then
+                    AddExplosion(GetEntityCoords(currentRace.vehicle), 2, 1.0, true, false, 1.0)
+                    
+                    -- Se player ainda estiver dentro, morre
+                    if IsPedInVehicle(plyPed, currentRace.vehicle, false) then
+                        SetEntityHealth(plyPed, 0)
+                    end
+                end
+
                 TriggerServerEvent('rossracing:failRace', currentRace.id, "Tempo esgotado")
                 EndRace()
             end
