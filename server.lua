@@ -221,13 +221,23 @@ AddEventHandler('rossracing:finishRace', function(raceId, timeElapsed)
     end
 
     -- Bônus de Vencedor (Se for o primeiro a chegar e houver mais de 1 jogador)
+    local isWinner = false
     if playerCount > 1 and othersFinished == 0 then
         reward = reward + Config.WinnerBonus
+        isWinner = true
     end
     
     Config.ServerGiveMoney(src, "dirty_money", reward)
+
+    -- Enviar Resultado Visual (HUD)
+    TriggerClientEvent('rossracing:showResult', src, {
+        isWinner = isWinner,
+        reward = reward,
+        time = timeElapsed,
+        playerName = GetPlayerName(src)
+    })
     
-    SendDiscordLog("Corrida Finalizada", 
+    SendDiscordLog("Corrida Finalizada",  
         "**RaceID:** " .. raceId .. "\n" ..
         "**Vencedor:** ID " .. src .. "\n" ..
         "**Tempo:** " .. timeElapsed .. "s\n" ..

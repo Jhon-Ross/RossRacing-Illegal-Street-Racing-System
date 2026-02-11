@@ -142,13 +142,30 @@ AddEventHandler('rossracing:startCountdown', function(seconds, circuitData, race
 
     -- Contagem
     for i = seconds, 1, -1 do
-        Config.ShowNotification(string.format(Config.Lang['race_starting'], i))
+        -- Config.ShowNotification(string.format(Config.Lang['race_starting'], i))
         PlaySoundFrontend(-1, "3_2_1", "HUD_MINI_GAME_SOUNDSET", true)
-        Citizen.Wait(1000)
+        
+        -- Cores dinâmicas
+        local color = {r = 255, g = 0, b = 0} -- 3 Vermelho
+        if i == 2 then color = {r = 255, g = 165, 0} end -- 2 Laranja
+        if i == 1 then color = {r = 255, g = 255, 0} end -- 1 Amarelo
+
+        local timer = GetGameTimer()
+        while GetGameTimer() - timer < 1000 do
+            Citizen.Wait(0)
+            DrawCenterText(tostring(i), color, 3.5) -- Texto Gigante
+        end
     end
 
-    Config.ShowNotification(Config.Lang['race_started'])
+    -- GO!
+    local timer = GetGameTimer()
     PlaySoundFrontend(-1, "GO", "HUD_MINI_GAME_SOUNDSET", true)
+    while GetGameTimer() - timer < 1500 do
+        Citizen.Wait(0)
+        DrawCenterText("GO!", {r = 0, g = 255, b = 0}, 4.0) -- Verde Gigante
+    end
+    
+    Config.ShowNotification(Config.Lang['race_started'])
     FreezeEntityPosition(veh, false)
     
     StartRaceLogic()
@@ -177,8 +194,17 @@ function StartRaceLogic()
                     explosionTimer = Config.ExplosionTimer
                     Citizen.CreateThread(function()
                         while isExplosionActive and explosionTimer > 0 do
-                            Config.ShowNotification(string.format(Config.Lang['leave_vehicle_warning'], explosionTimer))
-                            Citizen.Wait(1000)
+                            -- Config.ShowNotification(string.format(Config.Lang['leave_vehicle_warning'], explosionTimer))
+                            
+                            local timer = GetGameTimer()
+                            while GetGameTimer() - timer < 1000 and isExplosionActive do
+                                Citizen.Wait(0)
+                                -- Efeito de Piscar
+                                if GetGameTimer() % 500 < 250 then
+                                    DrawCenterText("VOLTE PARA O VEÍCULO: " .. explosionTimer, {r = 255, g = 0, b = 0}, 2.0)
+                                end
+                            end
+
                             explosionTimer = explosionTimer - 1
                         end
                         if isExplosionActive and explosionTimer <= 0 then
@@ -218,7 +244,7 @@ function StartRaceLogic()
                 if nextCheckpoint > #checkpoints then
                     -- Venceu
                     local timeElapsed = (GetGameTimer() - currentRace.startTime) / 1000
-                    Config.ShowNotification(string.format(Config.Lang['race_finished'], timeElapsed))
+                    -- Config.ShowNotification(string.format(Config.Lang['race_finished'], timeElapsed))
                     TriggerServerEvent('rossracing:finishRace', currentRace.id, timeElapsed)
                     EndRace()
                     break
@@ -241,9 +267,17 @@ function StartRaceLogic()
                 
                 -- Tempo extra para fugir
                 local failTimer = 5
+                local blink = true
                 while failTimer > 0 do
-                    Config.ShowNotification("EXPLOSÃO EM " .. failTimer .. "s")
-                    Citizen.Wait(1000)
+                    local timer = GetGameTimer()
+                    while GetGameTimer() - timer < 1000 do
+                        Citizen.Wait(0)
+                        
+                        -- Efeito de Piscar
+                        if GetGameTimer() % 500 < 250 then
+                            DrawCenterText("PERIGO: " .. failTimer, {r = 255, g = 0, b = 0}, 3.0)
+                        end
+                    end
                     failTimer = failTimer - 1
                 end
 
@@ -323,3 +357,49 @@ function Draw2DText(x, y, text, scale)
     AddTextComponentString(text)
     DrawText(x, y)
 end
+
+-- Função para desenhar texto centralizado gigante (Estilo HUD)
+function DrawCenterText(text, color, scale)
+    SetTextFont(7) -- Fonte estilo Digital/Racing
+    SetTextScale(scale, scale)
+    SetTextColour(color.r, color.g, color.b, 255)
+    SetTextCentre(true)
+    SetTextOutline()
+    SetTextEntry("STRING")
+    AddTextComponentString(text)
+    DrawText(0.5, 0.4)
+end
+
+-- Evento Visual de Resultado (Vitória)
+RegisterNetEvent('rossracing:showResult')
+AddEventHandler('rossracing:showResult', function(data)
+    Citizen.CreateThread(function()
+        local timer = GetGameTimer()
+        local displayTime = 8000 -- 8 segundos
+        
+        PlaySoundFrontend(-1, "Winner", "DLC_Fairground_Hub_Sounds", true)
+        
+        while GetGameTimer() - timer < displayTime do
+            Citizen.Wait(0)
+            
+            -- Título Principal
+            if data.isWinner then
+                -- Pisca Dourado/Amarelo
+                if GetGameTimer() % 500 < 250 then
+                    DrawCenterText("VENCEDOR!", {r = 255, g = 215, 0}, 3.0)
+                else
+                    DrawCenterText("VENCEDOR!", {r = 255, g = 255, 0}, 3.0)
+                end
+                
+                -- Nome do Player
+                Draw2DText(0.5, 0.55, "~w~Parabéns ~b~" .. data.playerName, 0.6)
+            else
+                DrawCenterText("CORRIDA FINALIZADA", {r = 0, g = 255, 0}, 2.5)
+            end
+
+            -- Detalhes (Tempo e Prêmio)
+            Draw2DText(0.5, 0.65, "~y~TEMPO:~w~ " .. data.time .. "s", 0.7)
+            Draw2DText(0.5, 0.70, "~g~PRÊMIO:~w~ $" .. data.reward, 0.7)
+        end
+    end)
+end)
