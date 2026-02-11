@@ -12,6 +12,8 @@ Config.Debug = false -- Ativar prints de debug
 Config.GlobalCooldown = 5 * 60 -- Tempo em segundos (5 minutos) de espera após o fim de uma corrida
 Config.ExplosionTimer = 5 -- Tempo em segundos para explodir o carro se sair dele
 Config.StartCountdown = 10 -- Contagem regressiva para iniciar a corrida
+Config.MaxPlayers = 10 -- Máximo de jogadores por corrida
+Config.LobbyDuration = 60 -- Tempo (em segundos) que o lobby fica aberto para entrada de jogadores
 
 -- Blips no Mapa
 Config.Blip = {
@@ -59,8 +61,12 @@ Config.Lang = {
     ['bought_ticket'] = "Você comprou um Ticket de Corrida por $%s.",
     ['no_money'] = "Você não tem dinheiro sujo suficiente.",
     ['race_active'] = "Já existe uma corrida em andamento.",
+    ['lobby_created'] = "Lobby criado! Aguardando jogadores (%s segundos).",
+    ['joined_lobby'] = "Você entrou na corrida. Aguarde o início.",
+    ['player_joined'] = "Um novo corredor entrou na disputa! (%s/%s)",
+    ['race_full'] = "A corrida já está cheia.",
     ['race_cooldown'] = "As corridas estão em cooldown. Aguarde %s segundos.",
-    ['start_race_help'] = "Pressione ~INPUT_CONTEXT~ para iniciar a corrida.",
+    ['start_race_help'] = "Pressione ~g~E~w~ para iniciar a corrida.",
     ['buy_ticket_help'] = "Pressione ~INPUT_CONTEXT~ para comprar Ticket ($%s).",
     ['race_starting'] = "Corrida iniciando em %s segundos...",
     ['race_started'] = "VALENDO! Siga os checkpoints!",

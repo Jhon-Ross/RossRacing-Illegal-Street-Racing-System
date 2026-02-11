@@ -5,8 +5,17 @@ author 'RossRacing'
 description 'RossRacing – Illegal Street Racing System'
 version '1.0.0'
 
-shared_script 'config.lua'
-shared_script 'circuitos.lua'
+shared_scripts {
+    'config.lua',
+    'circuitos.lua'
+}
 
-client_script 'client.lua'
-server_script 'server.lua'
+client_scripts {
+    '@vrp/lib/Utils.lua',
+    'client.lua'
+}
+
+server_scripts {
+    '@vrp/lib/Utils.lua',
+    'server.lua'
+}

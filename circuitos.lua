@@ -5,6 +5,7 @@ Circuitos = {}
 
 Circuitos['sample_race'] = {
     name = "Corrida do Porto",
+    reward = 5000, -- Valor do pagamento para esta corrida
     maxTime = 120, -- Tempo máximo em segundos para completar
     startCoords = vector4(189.95, -3024.16, 5.67, 268.0), -- Onde o player deve estar para iniciar (x,y,z,h)
     spawnCoords = vector4(189.95, -3024.16, 5.67, 268.0), -- Onde o carro será teleportado/posicionado ao iniciar

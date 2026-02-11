@@ -13,7 +13,7 @@ Citizen.CreateThread(function()
             SetBlipScale(blip, Config.Blip.Scale)
             SetBlipAsShortRange(blip, true)
             BeginTextCommandSetBlipName("STRING")
-            AddTextComponentString(Config.Blip.Name .. " - " .. circuit.name)
+            AddTextComponentString(circuit.name)
             EndTextCommandSetBlipName(blip)
         end
     end
@@ -27,9 +27,9 @@ Citizen.CreateThread(function()
             exports[Config.TargetResource]:AddTargetModel({ GetHashKey(Config.NPC.Model) }, {
                 options = {
                     {
-                        event = "rossracing:buyTicket",
-                        label = "Comprar Ticket ($"..Config.TicketPrice..")",
-                        tunnel = "server"
+                        event = "shops:Corridas",
+                        label = "CORRIDAS",
+                        tunnel = "client"
                     }
                 },
                 Distance = 2.5
@@ -73,7 +73,7 @@ Citizen.CreateThread(function()
                 sleep = 0
                 DrawText3D(npcConfig.Coords.x, npcConfig.Coords.y, npcConfig.Coords.z + 2.0, string.format(Config.Lang['buy_ticket_help'], Config.TicketPrice))
                 if IsControlJustPressed(0, 38) then -- E
-                    TriggerServerEvent('rossracing:buyTicket')
+                    TriggerEvent('shops:Corridas')
                 end
             end
         else
@@ -99,7 +99,7 @@ Citizen.CreateThread(function()
                 local dist = #(plyCoords - vector3(circuit.startCoords.x, circuit.startCoords.y, circuit.startCoords.z))
                 if dist < 10.0 then
                     sleep = 0
-                    DrawMarker(1, circuit.startCoords.x, circuit.startCoords.y, circuit.startCoords.z - 1.0, 0, 0, 0, 0, 0, 0, 3.0, 3.0, 1.0, 255, 0, 0, 100, false, true, 2, false, false, false, false)
+                    DrawMarker(4, circuit.startCoords.x, circuit.startCoords.y, circuit.startCoords.z + 1.5, 0, 0, 0, 0, 0, 0, 2.0, 2.0, 2.0, 255, 255, 255, 255, true, true, 2, false, false, false, false)
                     
                     if dist < 3.0 then
                         if IsPedInAnyVehicle(plyPed, false) and GetPedInVehicleSeat(GetVehiclePedIsIn(plyPed, false), -1) == plyPed then
@@ -165,6 +165,7 @@ function StartRaceLogic()
 
         while currentRace do
             Citizen.Wait(0)
+            if not currentRace then break end -- Segurança extra
             local plyPed = PlayerPedId()
             local plyCoords = GetEntityCoords(plyPed)
             local veh = GetVehiclePedIsIn(plyPed, false)
@@ -181,14 +182,16 @@ function StartRaceLogic()
                             explosionTimer = explosionTimer - 1
                         end
                         if isExplosionActive and explosionTimer <= 0 then
-                            AddExplosion(GetEntityCoords(currentRace.vehicle), 2, 1.0, true, false, 1.0)
-                            if not IsPedInVehicle(PlayerPedId(), currentRace.vehicle, false) then
-                                -- Se player não está dentro, carro explode e ele perde
-                                TriggerServerEvent('rossracing:failRace', currentRace.id, "Abandonou veículo")
-                            else
-                                -- Se voltou a tempo, nada acontece (mas aqui a logica é se timer zerar EXPLODE)
-                                -- Se timer zerou e ele esta dentro, ele morre com a explosão
-                                SetEntityHealth(plyPed, 0)
+                            if currentRace and currentRace.vehicle then
+                                AddExplosion(GetEntityCoords(currentRace.vehicle), 2, 1.0, true, false, 1.0)
+                                if not IsPedInVehicle(PlayerPedId(), currentRace.vehicle, false) then
+                                    -- Se player não está dentro, carro explode e ele perde
+                                    TriggerServerEvent('rossracing:failRace', currentRace.id, "Abandonou veículo")
+                                else
+                                    -- Se voltou a tempo, nada acontece (mas aqui a logica é se timer zerar EXPLODE)
+                                    -- Se timer zerou e ele esta dentro, ele morre com a explosão
+                                    SetEntityHealth(plyPed, 0)
+                                end
                             end
                             EndRace()
                         end
