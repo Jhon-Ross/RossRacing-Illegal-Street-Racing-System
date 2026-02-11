@@ -13,7 +13,7 @@ Config.GlobalCooldown = 5 * 60 -- Tempo em segundos (5 minutos) de espera após 
 Config.ExplosionTimer = 5 -- Tempo em segundos para explodir o carro se sair dele
 Config.StartCountdown = 10 -- Contagem regressiva para iniciar a corrida
 Config.MaxPlayers = 10 -- Máximo de jogadores por corrida
-Config.LobbyDuration = 60 -- Tempo (em segundos) que o lobby fica aberto para entrada de jogadores
+Config.LobbyDuration = 30 -- Tempo (em segundos) que o lobby fica aberto para entrada de jogadores
 
 -- Blips no Mapa
 Config.Blip = {
