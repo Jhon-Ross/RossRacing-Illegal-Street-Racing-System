@@ -2,6 +2,8 @@ local currentRace = nil
 local raceBlips = {}
 local explosionTimer = 0
 local isExplosionActive = false
+local isWaitingLobby = false
+local lobbyTimeLeft = 0
 
 -- Thread para Criar Blips no Mapa (Circuitos)
 Citizen.CreateThread(function()
@@ -94,7 +96,7 @@ Citizen.CreateThread(function()
         local plyPed = PlayerPedId()
         local plyCoords = GetEntityCoords(plyPed)
 
-        if not currentRace then
+        if not currentRace and not isWaitingLobby then
             for name, circuit in pairs(Circuitos) do
                 local dist = #(plyCoords - vector3(circuit.startCoords.x, circuit.startCoords.y, circuit.startCoords.z))
                 if dist < 10.0 then
@@ -103,9 +105,12 @@ Citizen.CreateThread(function()
                     
                     if dist < 3.0 then
                         if IsPedInAnyVehicle(plyPed, false) and GetPedInVehicleSeat(GetVehiclePedIsIn(plyPed, false), -1) == plyPed then
-                            DrawText3D(circuit.startCoords.x, circuit.startCoords.y, circuit.startCoords.z + 1.0, Config.Lang['start_race_help'])
-                            if IsControlJustPressed(0, 38) then
+                            DrawText3D(circuit.startCoords.x, circuit.startCoords.y, circuit.startCoords.z + 1.0, Config.Lang['start_race_help'] .. "\n~b~[G] Ranking")
+                            if IsControlJustPressed(0, 38) then -- E
                                 TriggerServerEvent('rossracing:requestStart', name)
+                            end
+                            if IsControlJustPressed(0, 47) then -- G
+                                TriggerServerEvent('rossracing:getRankingData', name)
                             end
                         else
                             DrawText3D(circuit.startCoords.x, circuit.startCoords.y, circuit.startCoords.z + 1.0, Config.Lang['wrong_vehicle'])
@@ -163,15 +168,57 @@ AddEventHandler('rossracing:startCountdown', function(seconds, circuitData, race
     while GetGameTimer() - timer < 1500 do
         Citizen.Wait(0)
         DrawCenterText("GO!", {r = 0, g = 255, b = 0}, 4.0) -- Verde Gigante
+        Draw2DText(0.5, 0.8, "~g~SIGA OS CHECKPOINTS!", 0.7)
     end
     
-    Config.ShowNotification(Config.Lang['race_started'])
+    -- Config.ShowNotification(Config.TriggerClientEvent('rossracing:notify', src, string.format(Config.Lang['lobby_created'], Config.LobbyDuration))ang['race_started'])
     FreezeEntityPosition(veh, false)
     
     StartRaceLogic()
 end)
 
+RegisterNetEvent('rossracing:openRanking')
+AddEventHandler('rossracing:openRanking', function(rankingData, circuitName)
+    local msg = "~y~🏆 RANKING: " .. circuitName .. "\n"
+    if not rankingData or #rankingData == 0 then
+        msg = msg .. "~w~Nenhum registro encontrado."
+    else
+        for i, row in ipairs(rankingData) do
+            msg = msg .. "~w~" .. i .. ". ~b~" .. row.name .. " ~w~- ~g~" .. row.time .. "s\n"
+        end
+    end
+    
+    -- Exibir por 10 segundos
+    Citizen.CreateThread(function()
+        local timer = GetGameTimer()
+        while GetGameTimer() - timer < 10000 do
+            Citizen.Wait(0)
+            Draw2DText(0.5, 0.3, msg, 0.5)
+        end
+    end)
+end)
+
+RegisterNetEvent('rossracing:updateLobby')
+AddEventHandler('rossracing:updateLobby', function(timeLeft)
+    isWaitingLobby = true
+    lobbyTimeLeft = timeLeft
+    
+    -- Iniciar thread de exibição se for a primeira vez
+    if timeLeft > 0 then
+        Citizen.CreateThread(function()
+            while isWaitingLobby and lobbyTimeLeft > 0 do
+                Citizen.Wait(0)
+                -- Contador simples no topo (0.5, 0.15), amarelo, escala 0.8
+                Draw2DText(0.5, 0.15, "~y~" .. lobbyTimeLeft, 0.8)
+            end
+        end)
+    else
+        isWaitingLobby = false
+    end
+end)
+
 function StartRaceLogic()
+    isWaitingLobby = false -- Garante que saia do modo espera
     Citizen.CreateThread(function()
         local nextCheckpoint = 1
         local raceData = currentRace.data
@@ -321,10 +368,23 @@ function EndRace()
     raceBlips = {}
 end
 
--- Notificação
+-- Notificação Visual (Substitui antiga notificação)
 RegisterNetEvent('rossracing:notify')
 AddEventHandler('rossracing:notify', function(msg)
-    Config.ShowNotification(msg)
+    -- Config.ShowNotification(msg) -- Antigo removido
+    
+    Citizen.CreateThread(function()
+        local timer = GetGameTimer()
+        local displayTime = 4000 -- 4 segundos
+        
+        -- Som de notificação suave
+        PlaySoundFrontend(-1, "INFO", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
+
+        while GetGameTimer() - timer < displayTime do
+            Citizen.Wait(0)
+            DrawCenterText(msg, {r = 255, g = 255, b = 255}, 1.5)
+        end
+    end)
 end)
 
 -- Helper Text 3D
@@ -343,11 +403,14 @@ function DrawText3D(x, y, z, text)
 end
 
 -- Helper Text 2D (Novo)
-function Draw2DText(x, y, text, scale)
+function Draw2DText(x, y, text, scale, color)
+    local r, g, b = 255, 255, 255
+    if color then r, g, b = color.r, color.g, color.b end
+
     SetTextFont(4)
     SetTextProportional(1)
     SetTextScale(scale, scale)
-    SetTextColour(255, 255, 255, 255)
+    SetTextColour(r, g, b, 255)
     SetTextDropShadow(0, 0, 0, 0, 255)
     SetTextEdge(1, 0, 0, 0, 255)
     SetTextDropShadow()
@@ -400,6 +463,27 @@ AddEventHandler('rossracing:showResult', function(data)
             -- Detalhes (Tempo e Prêmio)
             Draw2DText(0.5, 0.65, "~y~TEMPO:~w~ " .. data.time .. "s", 0.7)
             Draw2DText(0.5, 0.70, "~g~PRÊMIO:~w~ $" .. data.reward, 0.7)
+        end
+
+        -- Mostrar Novo Recorde APÓS a tela de resultado
+        if data.isNewRecord then
+            local recordTimer = GetGameTimer()
+            local recordDisplayTime = 5000 -- 5 segundos
+            
+            PlaySoundFrontend(-1, "CHECKPOINT_PERFECT", "HUD_MINI_GAME_SOUNDSET", true)
+
+            while GetGameTimer() - recordTimer < recordDisplayTime do
+                Citizen.Wait(0)
+                -- Pisca Verde/Branco
+                if GetGameTimer() % 500 < 250 then
+                    DrawCenterText("NOVO RECORDE!", {r = 0, g = 255, 0}, 2.5)
+                else
+                    DrawCenterText("NOVO RECORDE!", {r = 255, g = 255, 255}, 2.5)
+                end
+                
+                Draw2DText(0.5, 0.60, "~w~Você superou seu tempo anterior!", 0.6)
+                Draw2DText(0.5, 0.65, "~y~NOVO TEMPO:~w~ " .. data.time .. "s", 0.7)
+            end
         end
     end)
 end)

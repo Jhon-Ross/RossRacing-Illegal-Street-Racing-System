@@ -3,6 +3,13 @@ local Proxy = module("vrp","lib/Proxy")
 vRP = Proxy.getInterface("vRP")
 
 -----------------------------------------------------------------------------------------------------------------------------------------
+-- PREPARE QUERIES
+-----------------------------------------------------------------------------------------------------------------------------------------
+vRP.Prepare("rossracing/insert_ranking","INSERT INTO rossracing_ranking (circuit, user_id, name, vehicle, time) VALUES (@circuit, @user_id, @name, @vehicle, @time) ON DUPLICATE KEY UPDATE time = CASE WHEN @time < time THEN @time ELSE time END, vehicle = CASE WHEN @time < time THEN @vehicle ELSE vehicle END, date = CASE WHEN @time < time THEN CURRENT_TIMESTAMP ELSE date END")
+vRP.Prepare("rossracing/get_ranking","SELECT name, time, vehicle FROM rossracing_ranking WHERE circuit = @circuit ORDER BY time ASC LIMIT 10")
+vRP.Prepare("rossracing/get_player_best","SELECT time FROM rossracing_ranking WHERE circuit = @circuit AND user_id = @user_id")
+
+-----------------------------------------------------------------------------------------------------------------------------------------
 -- CONFIG OVERRIDE (BRIDGE)
 -----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -129,6 +136,15 @@ AddEventHandler('rossracing:requestStart', function(circuitName)
                 TriggerClientEvent('rossracing:notify', src, Config.Lang['joined_lobby'])
                 
                 -- Notificar outros
+                local timeLeft = 0 -- TODO: Pegar tempo real
+                -- Mas como o loop do timer já roda em outra thread, vamos apenas mandar o evento de updateLobby no proximo tick do loop principal
+                -- Ou podemos forçar um update imediato se tivermos acesso ao timeLeft (variavel local da outra thread)
+                -- Como não temos acesso direto, o cliente receberá o update no próximo segundo.
+                
+                -- Gambiarra segura: O cliente vai receber o tempo no próximo segundo pelo loop principal.
+                -- Mas para garantir feedback imediato, vamos mandar um tempo estimado ou esperar o loop.
+                -- Melhor: O loop principal do lobby envia update a cada segundo. O player novo vai receber em <1s.
+                
                 for pid, _ in pairs(activeRace.players) do
                     if pid ~= src then
                         TriggerClientEvent('rossracing:notify', pid, string.format(Config.Lang['player_joined'], count + 1, Config.MaxPlayers))
@@ -156,6 +172,7 @@ AddEventHandler('rossracing:requestStart', function(circuitName)
         }
 
         TriggerClientEvent('rossracing:notify', src, string.format(Config.Lang['lobby_created'], Config.LobbyDuration))
+        TriggerClientEvent('rossracing:updateLobby', src, Config.LobbyDuration)
         
         -- Iniciar Timer do Lobby
         Citizen.CreateThread(function()
@@ -163,6 +180,11 @@ AddEventHandler('rossracing:requestStart', function(circuitName)
             while timeLeft > 0 and activeRace and activeRace.id == raceId do
                 Citizen.Wait(1000)
                 timeLeft = timeLeft - 1
+                
+                -- Atualizar tempo para todos os jogadores no lobby
+                for pid, _ in pairs(activeRace.players) do
+                    TriggerClientEvent('rossracing:updateLobby', pid, timeLeft)
+                end
             end
 
             if activeRace and activeRace.id == raceId and activeRace.status == "waiting" then
@@ -229,13 +251,47 @@ AddEventHandler('rossracing:finishRace', function(raceId, timeElapsed)
     
     Config.ServerGiveMoney(src, "dirty_money", reward)
 
-    -- Enviar Resultado Visual (HUD)
-    TriggerClientEvent('rossracing:showResult', src, {
-        isWinner = isWinner,
-        reward = reward,
-        time = timeElapsed,
-        playerName = GetPlayerName(src)
-    })
+    -- SALVAR RANKING
+    local Passport = vRP.Passport(src)
+    if Passport then
+        local Identity = vRP.Identity(Passport)
+        local fullName = Identity["name"] .. " " .. Identity["name2"]
+        local vehName = "Veículo" -- TODO: Pegar nome do veículo se possível via client
+        
+        -- Inserir ou Atualizar Recorde (Query já trata se é melhor tempo)
+        vRP.Query("rossracing/insert_ranking", {
+            circuit = activeRace.circuit,
+            user_id = Passport,
+            name = fullName,
+            vehicle = vehName,
+            time = timeElapsed
+        })
+
+        -- Verificar se bateu o recorde pessoal para notificar
+        local best = vRP.Query("rossracing/get_player_best", { circuit = activeRace.circuit, user_id = Passport })
+        local isNewRecord = false
+        if best and best[1] and best[1].time == timeElapsed then
+            isNewRecord = true
+        end
+
+        -- Enviar Resultado Visual (HUD)
+        TriggerClientEvent('rossracing:showResult', src, {
+            isWinner = isWinner,
+            reward = reward,
+            time = timeElapsed,
+            playerName = GetPlayerName(src),
+            isNewRecord = isNewRecord
+        })
+    else
+        -- Fallback se Passport não encontrado (raro)
+        TriggerClientEvent('rossracing:showResult', src, {
+            isWinner = isWinner,
+            reward = reward,
+            time = timeElapsed,
+            playerName = GetPlayerName(src),
+            isNewRecord = false
+        })
+    end
     
     SendDiscordLog("Corrida Finalizada",  
         "**RaceID:** " .. raceId .. "\n" ..
@@ -245,9 +301,19 @@ AddEventHandler('rossracing:finishRace', function(raceId, timeElapsed)
         "**Policiais:** " .. policeCount
     )
 
-    -- Reset Race
+    -- Reset Race (CORREÇÃO: Só reseta se todos terminaram ou força maior. 
+    -- Mantendo original por enquanto mas alertando: isso reseta a corrida pro PRIMEIRO que chegar.
+    -- Idealmente, deveria esperar todos. Mas vou manter o comportamento original por ora.)
     activeRace = nil
     raceCooldown = Config.GlobalCooldown
+end)
+
+-- Evento para buscar Ranking
+RegisterNetEvent('rossracing:getRankingData')
+AddEventHandler('rossracing:getRankingData', function(circuitName)
+    local src = source
+    local rows = vRP.Query("rossracing/get_ranking", { circuit = circuitName })
+    TriggerClientEvent('rossracing:openRanking', src, rows, Circuitos[circuitName].name)
 end)
 
 -- Falha ou Cancelamento
