@@ -1,15 +1,16 @@
 # RossRacing – Illegal Street Racing System
 
 ## 📌 Apresentação
-**RossRacing – Illegal Street Racing System** é um script completo e exclusivo de corridas ilegais desenvolvido para servidores de GTA RP (FiveM). Com foco em realismo e imersão, o sistema integra economia (dinheiro sujo), risco (explosões e polícia) e competição.
+**RossRacing – Illegal Street Racing System** é um script completo e exclusivo de corridas ilegais desenvolvido para servidores de GTA RP (FiveM). Com foco em realismo, competitividade e imersão, o sistema integra economia (dinheiro sujo), risco (explosões e polícia) e um **Sistema de Ranking Global Persistente**.
 
 ### Destaques do Sistema
-*   **Sistema de Tickets:** Acesso restrito via compra de tickets com NPC usando dinheiro sujo.
-*   **Corrida Hardcore:** Se o tempo acabar ou você abandonar o veículo, o carro explode.
-*   **Integração Policial:** A presença de policiais aumenta a recompensa (Risco x Recompensa).
-*   **Cooldown Global:** Evita spam de corridas e valoriza o evento.
-*   **Totalmente Configurável:** Coordenadas, preços, tempos, mensagens e integração com qualquer base (ESX, QBCore, vRP, Creative).
-*   **Logs no Discord:** Monitoramento completo de todas as corridas, tickets e resultados.
+*   **🏆 Ranking Global e Pessoal (SQL):** Salva automaticamente os melhores tempos no banco de dados. Visualize o Top 10 de cada pista ingame.
+*   **🏎️ Lobby Multiplayer:** Suporte para corridas com múltiplos jogadores sincronizados. Largada conjunta!
+*   **💣 Corrida Hardcore:** Se o tempo acabar ou você abandonar o veículo, o carro explode.
+*   **🎟️ Sistema de Tickets:** Acesso restrito via compra de tickets com NPC usando dinheiro sujo.
+*   **👮 Integração Policial:** A presença de policiais aumenta a recompensa (Risco x Recompensa).
+*   **📊 Interface Visual (HUD):** Textos 3D interativos, contagem regressiva estilo corrida, e notificações de vitória/recorde dedicadas.
+*   **🔄 Totalmente Configurável:** Coordenadas, preços, tempos, mensagens e integração com qualquer base (ESX, QBCore, vRP, Creative).
 
 ---
 
@@ -17,70 +18,63 @@
 
 ### 1. Iniciando uma Corrida
 Para iniciar uma corrida, o jogador precisa de um **Ticket de Corrida**.
-1.  Vá até o NPC (marcado ou escondido, configurável).
-2.  Compre o ticket usando **Dinheiro Sujo**.
-3.  Vá até o ponto de início da corrida com um veículo.
-4.  Pressione **E** para iniciar.
+1.  Vá até o NPC (marcado ou escondido, configurável) e compre o ticket.
+2.  Vá até o ponto de início da corrida com um veículo.
+3.  **Comandos no Blip:**
+    *   **[E]** Iniciar Lobby / Entrar na Corrida.
+    *   **[G]** Visualizar Ranking (Top 10 Melhores Tempos).
 
-### 2. A Corrida
-*   Ao iniciar, uma contagem regressiva começa.
-*   Siga os checkpoints amarelos no mapa.
-*   **CUIDADO:** Você tem um tempo limite. Se o tempo esgotar, **o carro explode**.
-*   **NÃO SAIA DO CARRO:** Se sair do veículo durante a corrida, você tem 5 segundos para voltar, ou **o carro explode**.
+### 2. A Corrida (Lobby)
+*   Ao criar um lobby, outros jogadores podem entrar.
+*   Quando a contagem termina, todos largam juntos.
+*   **Regras:**
+    *   Siga os checkpoints.
+    *   Não saia do veículo (Explosão em 5s).
+    *   Chegue antes do tempo limite (Explosão se falhar).
 
-### 3. Recompensas e Polícia
-*   A recompensa é paga em dinheiro sujo.
-*   **Bônus Policial:** Quanto mais policiais em serviço, maior o prêmio.
-    *   Ex: Base $2500. Com 2 policiais: +$5000. Com 4 policiais: +$10000.
+### 3. Pós-Corrida e Ranking
+*   **Vencedor:** Quem chegar primeiro ganha o prêmio principal + bônus de vitória.
+*   **Novo Recorde:** Se você bater seu próprio tempo, uma tela especial de **"NOVO RECORDE"** aparecerá após o resultado.
+*   **Economia:** Pagamentos em dinheiro sujo. Bônus extra se houver policiais online.
 
 ---
 
-## 🛠️ Documentação Técnica
+## 🛠️ Instalação e Requisitos
 
-### Estrutura de Arquivos
-*   `client.lua`: Lógica do cliente (NPC, markers, corrida, explosão).
-*   `server.lua`: Lógica do servidor (controle de estado, pagamentos, logs).
-*   `config.lua`: Todas as configurações e **funções de integração (Bridge)**.
-*   `circuitos.lua`: Definição das pistas e coordenadas.
+### 1. Banco de Dados (Obrigatório)
+Para que o sistema de Ranking funcione, você **DEVE** executar o arquivo SQL no seu banco de dados.
+1.  Abra seu gerenciador SQL (HeidiSQL, phpMyAdmin).
+2.  Execute o arquivo `ranking.sql` incluído na pasta do script.
+3.  Isso criará a tabela `rossracing_ranking`.
 
-### Configuração (config.lua)
-O arquivo `config.lua` é o coração do script. Nele você define:
-*   **Framework:** Funções `ServerCheckMoney`, `ServerRemoveMoney`, etc., devem ser adaptadas para sua base (Creative, vRP, ESX, etc).
-*   **NPC:** Modelo e coordenadas do vendedor de tickets.
-*   **Preços e Tempos:** Valor do ticket, cooldown, tempo de explosão.
-*   **Webhook:** Link do webhook do Discord para logs.
+### 2. Configuração (config.lua)
+O arquivo `config.lua` permite ajustar a "Bridge" para sua base (Creative, vRP, ESX, etc).
+*   **Framework:** Ajuste as funções `ServerCheckMoney`, `ServerRemoveMoney`, etc.
+*   **NPC:** Modelo e coordenadas.
+*   **Webhook:** Adicione seu link do Discord para logs detalhados.
 
-### Criando Novos Circuitos (circuitos.lua)
-Para adicionar uma nova corrida, edite `circuitos.lua`:
-```lua
-Circuitos['nome_unico'] = {
-    name = "Nome da Pista",
-    maxTime = 120, -- Tempo em segundos
-    startCoords = vector4(x, y, z, h), -- Onde aperta E
-    spawnCoords = vector4(x, y, z, h), -- Onde o carro spawna
-    checkpoints = {
-        { coords = vector3(x, y, z), type = 1 },
-        { coords = vector3(x, y, z), type = 1 },
-        -- ...
-    }
-}
-```
+### 3. Criando Novos Circuitos (circuitos.lua)
+Edite `circuitos.lua` para criar novas rotas. O sistema é modular e aceita infinitas pistas.
 
-### Eventos e Logs
-O sistema gera logs detalhados para:
+---
+
+## 📂 Estrutura de Arquivos
+*   `client.lua`: Lógica do cliente (HUD, Lobby, Markers, Explosão).
+*   `server.lua`: Lógica do servidor (SQL, Pagamentos, Webhooks).
+*   `config.lua`: Configurações gerais e Bridge.
+*   `circuitos.lua`: Definição das pistas.
+*   `ranking.sql`: Estrutura do banco de dados para os recordes.
+
+---
+
+## 📝 Logs e Monitoramento
+O sistema gera logs no Discord para:
 *   Compra de Ticket.
-*   Início de Corrida (com ID único).
-*   Finalização (com tempo e prêmio).
-*   Falha (motivo da explosão/perda).
-
----
-
-## 🚀 Escalabilidade
-O script foi desenhado para ser modular.
-*   **Ranking:** O `RaceID` e os tempos salvos permitem fácil implementação de um ranking SQL futuro.
-*   **Temporadas:** A estrutura de `Circuitos` permite rotação de pistas.
+*   Início de Corrida (com lista de participantes).
+*   Resultado Final (Vencedor, Tempos, Prêmios).
+*   Falhas e Cancelamentos.
 
 ---
 
 **RossRacing – Illegal Street Racing System**
-*Sistema proprietário, modular e escalável para GTA RP.*
+*Desenvolvido para alta performance e imersão.*
