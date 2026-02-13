@@ -1,5 +1,7 @@
 # RossRacing – Illegal Street Racing System
 
+![RossRacing Banner](arte.script.png)
+
 > **⚠️ AVISO IMPORTANTE:** Este repositório contém a versão de **VITRINE** do projeto. O código fonte completo do lado do servidor (`server.lua`) contendo a lógica de pagamentos, banco de dados e segurança é um produto pago e fechado.
 
 ## 📌 Apresentação
