@@ -1,7 +1,15 @@
 # RossRacing – Illegal Street Racing System
 
+> **⚠️ AVISO IMPORTANTE:** Este repositório contém a versão de **VITRINE** do projeto. O código fonte completo do lado do servidor (`server.lua`) contendo a lógica de pagamentos, banco de dados e segurança é um produto pago e fechado.
+
 ## 📌 Apresentação
 **RossRacing – Illegal Street Racing System** é um script completo e exclusivo de corridas ilegais desenvolvido para servidores de GTA RP (FiveM). Com foco em realismo, competitividade e imersão, o sistema integra economia (dinheiro sujo), risco (explosões e polícia) e um **Sistema de Ranking Global Persistente**.
+
+### 🛒 Como Adquirir a Versão Completa?
+Para ter acesso ao script funcional (com `server.lua` completo e ofuscado), entre em nosso Discord e abra um ticket de compra.
+**🔗 Discord Oficial:** [https://discord.com/invite/Tax7zUGy7C](https://discord.com/invite/Tax7zUGy7C)
+
+---
 
 ### Destaques do Sistema
 *   **🏆 Ranking Global e Pessoal (SQL):** Salva automaticamente os melhores tempos no banco de dados. Visualize o Top 10 de cada pista ingame.
@@ -59,11 +67,11 @@ Edite `circuitos.lua` para criar novas rotas. O sistema é modular e aceita infi
 ---
 
 ## 📂 Estrutura de Arquivos
-*   `client.lua`: Lógica do cliente (HUD, Lobby, Markers, Explosão).
-*   `server.lua`: Lógica do servidor (SQL, Pagamentos, Webhooks).
-*   `config.lua`: Configurações gerais e Bridge.
-*   `circuitos.lua`: Definição das pistas.
-*   `ranking.sql`: Estrutura do banco de dados para os recordes.
+*   `client.lua`: Lógica do cliente (HUD, Lobby, Markers, Explosão) - **Disponível**.
+*   `server.lua`: Arquivo de demonstração (Stub). **Versão completa disponível apenas para compradores.**
+*   `config.lua`: Configurações gerais e Bridge - **Disponível**.
+*   `circuitos.lua`: Definição das pistas - **Disponível**.
+*   `ranking.sql`: Estrutura do banco de dados para os recordes - **Disponível**.
 
 ---
 

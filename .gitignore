@@ -2,3 +2,4 @@
 Thumbs.db
 *.log
 .vscode/
+server_full.lua
