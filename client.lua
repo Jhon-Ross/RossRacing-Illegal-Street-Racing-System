@@ -125,16 +125,41 @@ end)
 
 -- Evento Start Race Countdown
 RegisterNetEvent('rossracing:startCountdown')
-AddEventHandler('rossracing:startCountdown', function(seconds, circuitData, raceId)
+AddEventHandler('rossracing:startCountdown', function(seconds, circuitData, raceId, gridIndex)
     local plyPed = PlayerPedId()
     local veh = GetVehiclePedIsIn(plyPed, false)
     
     if not veh then return end
 
-    -- Posicionar carro
-    SetEntityCoords(veh, circuitData.spawnCoords.x, circuitData.spawnCoords.y, circuitData.spawnCoords.z)
-    SetEntityHeading(veh, circuitData.spawnCoords.w)
+    -- Default grid index if not provided
+    gridIndex = gridIndex or 1
+
+    local spawnCoords = circuitData.spawnCoords
+    local h = spawnCoords.w
+    local rad = math.rad(h)
+    local forward = vector3(-math.sin(rad), math.cos(rad), 0)
+    local right = vector3(math.cos(rad), math.sin(rad), 0)
+    local col = (gridIndex - 1) % 2
+    local row = math.floor((gridIndex - 1) / 2)
+    local sideSpacing = 4.0
+    local rowSpacing = 12.0
+    local stagger = 0.0
+    local sideOffset = (col == 0) and -sideSpacing or sideSpacing
+    local backOffset = (row * rowSpacing) + (col * stagger)
+    local finalPos = vector3(spawnCoords.x, spawnCoords.y, spawnCoords.z) + (right * sideOffset) - (forward * backOffset)
+
+    if circuitData.gridPositions and circuitData.gridPositions[gridIndex] then
+        local gp = circuitData.gridPositions[gridIndex]
+        SetEntityCoords(veh, gp.x, gp.y, gp.z)
+        SetEntityHeading(veh, gp.w)
+    else
+        SetEntityCoords(veh, finalPos.x, finalPos.y, finalPos.z)
+        SetEntityHeading(veh, spawnCoords.w)
+    end
+    SetVehicleOnGroundProperly(veh)
     FreezeEntityPosition(veh, true)
+    
+    SetEntityCollision(veh, true, true)
 
     currentRace = {
         id = raceId,
@@ -173,6 +198,8 @@ AddEventHandler('rossracing:startCountdown', function(seconds, circuitData, race
     
     -- Config.ShowNotification(Config.TriggerClientEvent('rossracing:notify', src, string.format(Config.Lang['lobby_created'], Config.LobbyDuration))ang['race_started'])
     FreezeEntityPosition(veh, false)
+    
+    SetEntityCollision(veh, true, true)
     
     StartRaceLogic()
 end)
@@ -309,8 +336,9 @@ function StartRaceLogic()
             Draw2DText(0.5, 0.9, "~y~TEMPO RESTANTE:~w~ " .. timeRemaining .. "s", 0.6)
 
             if (GetGameTimer() - currentRace.startTime) > currentRace.maxTime then
-                Config.ShowNotification(Config.Lang['race_failed'])
-                Config.ShowNotification("SAIA DO VEÍCULO! EXPLOSÃO EM 5 SEGUNDOS!")
+                -- Config.ShowNotification(Config.Lang['race_failed'])
+                -- Config.ShowNotification("SAIA DO VEÍCULO! EXPLOSÃO EM 5 SEGUNDOS!")
+                TriggerEvent('rossracing:notify', Config.Lang['race_failed'])
                 
                 -- Tempo extra para fugir
                 local failTimer = 5
