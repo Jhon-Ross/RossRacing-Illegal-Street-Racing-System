@@ -6,8 +6,10 @@ vRP = Proxy.getInterface("vRP")
 -- PREPARE QUERIES
 -----------------------------------------------------------------------------------------------------------------------------------------
 vRP.Prepare("rossracing/insert_ranking","INSERT INTO rossracing_ranking (circuit, user_id, name, vehicle, time) VALUES (@circuit, @user_id, @name, @vehicle, @time) ON DUPLICATE KEY UPDATE time = CASE WHEN @time < time THEN @time ELSE time END, vehicle = CASE WHEN @time < time THEN @vehicle ELSE vehicle END, date = CASE WHEN @time < time THEN CURRENT_TIMESTAMP ELSE date END")
-vRP.Prepare("rossracing/get_ranking","SELECT name, time, vehicle FROM rossracing_ranking WHERE circuit = @circuit ORDER BY time ASC LIMIT 10")
+vRP.Prepare("rossracing/get_ranking","SELECT COALESCE(n.nickname, r.name) as name, r.time, r.vehicle FROM rossracing_ranking r LEFT JOIN rossracing_nicknames n ON r.user_id = n.user_id WHERE r.circuit = @circuit ORDER BY r.time ASC LIMIT 10")
 vRP.Prepare("rossracing/get_player_best","SELECT time FROM rossracing_ranking WHERE circuit = @circuit AND user_id = @user_id")
+vRP.Prepare("rossracing/set_nickname","INSERT INTO rossracing_nicknames (user_id, nickname) VALUES (@user_id, @nickname) ON DUPLICATE KEY UPDATE nickname = @nickname")
+vRP.Prepare("rossracing/get_nickname","SELECT nickname FROM rossracing_nicknames WHERE user_id = @user_id")
 
 -----------------------------------------------------------------------------------------------------------------------------------------
 -- CONFIG OVERRIDE (BRIDGE)
@@ -99,9 +101,18 @@ end)
 
 -- Solicitar Início de Corrida
 RegisterNetEvent('rossracing:requestStart')
-AddEventHandler('rossracing:requestStart', function(circuitName)
+AddEventHandler('rossracing:requestStart', function(circuitName, nickname)
     local src = source
+    local Passport = vRP.Passport(src)
     
+    -- Atualizar apelido se fornecido
+    if Passport and nickname and nickname ~= "" then
+        -- Validação simples (embora o client limite, é bom checar)
+        if string.len(nickname) >= 3 and string.len(nickname) <= 20 then
+            vRP.Query("rossracing/set_nickname", { user_id = Passport, nickname = nickname })
+        end
+    end
+
     if raceCooldowns[circuitName] and raceCooldowns[circuitName] > 0 then
         TriggerClientEvent('rossracing:notify', src, string.format(Config.Lang['race_cooldown'], raceCooldowns[circuitName]))
         return
@@ -264,6 +275,12 @@ AddEventHandler('rossracing:finishRace', function(raceId, timeElapsed)
         local fullName = Identity["name"] .. " " .. Identity["name2"]
         local vehName = "Veículo" -- TODO: Pegar nome do veículo se possível via client
         
+        -- Verificar se tem apelido
+        local nicknameData = vRP.Query("rossracing/get_nickname", { user_id = Passport })
+        if nicknameData and nicknameData[1] and nicknameData[1].nickname and nicknameData[1].nickname ~= "" then
+            fullName = nicknameData[1].nickname
+        end
+
         -- Inserir ou Atualizar Recorde (Query já trata se é melhor tempo)
         vRP.Query("rossracing/insert_ranking", {
             circuit = activeRace.circuit,

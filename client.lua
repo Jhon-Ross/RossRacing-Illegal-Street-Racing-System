@@ -107,7 +107,10 @@ Citizen.CreateThread(function()
                         if IsPedInAnyVehicle(plyPed, false) and GetPedInVehicleSeat(GetVehiclePedIsIn(plyPed, false), -1) == plyPed then
                             DrawText3D(circuit.startCoords.x, circuit.startCoords.y, circuit.startCoords.z + 1.0, Config.Lang['start_race_help'] .. "\n~b~[G] Ranking")
                             if IsControlJustPressed(0, 38) then -- E
-                                TriggerServerEvent('rossracing:requestStart', name)
+                                local nickname = KeyboardInput("Digite seu Vulgo/Apelido (Max 20 chars):", "", 20)
+                                if nickname then
+                                    TriggerServerEvent('rossracing:requestStart', name, nickname)
+                                end
                             end
                             if IsControlJustPressed(0, 47) then -- G
                                 TriggerServerEvent('rossracing:getRankingData', name)
@@ -459,6 +462,22 @@ function DrawCenterText(text, color, scale)
     SetTextEntry("STRING")
     AddTextComponentString(text)
     DrawText(0.5, 0.4)
+end
+
+function KeyboardInput(text, example, maxLength)
+    AddTextEntry('FMMC_KEY_TIP1', text)
+    DisplayOnscreenKeyboard(1, "FMMC_KEY_TIP1", "", example, "", "", "", maxLength)
+    while UpdateOnscreenKeyboard() ~= 1 and UpdateOnscreenKeyboard() ~= 2 do
+        Citizen.Wait(0)
+    end
+    if UpdateOnscreenKeyboard() ~= 2 then
+        local result = GetOnscreenKeyboardResult()
+        Citizen.Wait(500)
+        return result
+    else
+        Citizen.Wait(500)
+        return nil
+    end
 end
 
 -- Evento Visual de Resultado (Vitória)
