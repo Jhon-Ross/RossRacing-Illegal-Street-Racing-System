@@ -8,7 +8,7 @@ vRP = Proxy.getInterface("vRP")
 vRP.Prepare("rossracing/insert_ranking","INSERT INTO rossracing_ranking (circuit, user_id, name, vehicle, time) VALUES (@circuit, @user_id, @name, @vehicle, @time) ON DUPLICATE KEY UPDATE time = CASE WHEN @time < time THEN @time ELSE time END, vehicle = CASE WHEN @time < time THEN @vehicle ELSE vehicle END, date = CASE WHEN @time < time THEN CURRENT_TIMESTAMP ELSE date END")
 vRP.Prepare("rossracing/get_ranking","SELECT COALESCE(n.nickname, r.name) as name, r.time, r.vehicle FROM rossracing_ranking r LEFT JOIN rossracing_nicknames n ON r.user_id = n.user_id WHERE r.circuit = @circuit ORDER BY r.time ASC LIMIT 10")
 vRP.Prepare("rossracing/get_player_best","SELECT time FROM rossracing_ranking WHERE circuit = @circuit AND user_id = @user_id")
-vRP.Prepare("rossracing/set_nickname","INSERT INTO rossracing_nicknames (user_id, nickname) VALUES (@user_id, @nickname) ON DUPLICATE KEY UPDATE nickname = @nickname")
+vRP.Prepare("rossracing/set_nickname","INSERT IGNORE INTO rossracing_nicknames (user_id, nickname) VALUES (@user_id, @nickname)")
 vRP.Prepare("rossracing/get_nickname","SELECT nickname FROM rossracing_nicknames WHERE user_id = @user_id")
 
 -----------------------------------------------------------------------------------------------------------------------------------------
@@ -99,20 +99,46 @@ AddEventHandler('rossracing:buyTicket', function()
     end
 end)
 
--- Solicitar Início de Corrida
-RegisterNetEvent('rossracing:requestStart')
-AddEventHandler('rossracing:requestStart', function(circuitName, nickname)
+-- Solicitar Verificação de Entrada (Novo Fluxo)
+RegisterNetEvent('rossracing:checkAndJoin')
+AddEventHandler('rossracing:checkAndJoin', function(circuitName)
     local src = source
     local Passport = vRP.Passport(src)
     
-    -- Atualizar apelido se fornecido
+    if not Passport then return end
+
+    -- Verificar se já tem apelido
+    local nicknameData = vRP.Query("rossracing/get_nickname", { user_id = Passport })
+    if nicknameData and nicknameData[1] and nicknameData[1].nickname and nicknameData[1].nickname ~= "" then
+        -- Já tem apelido: Entrar direto
+        ProcessRaceJoin(src, circuitName)
+    else
+        -- Não tem apelido: Pedir Input
+        TriggerClientEvent('rossracing:openNicknameInput', src, circuitName)
+    end
+end)
+
+-- Receber Apelido e Entrar
+RegisterNetEvent('rossracing:setNicknameAndJoin')
+AddEventHandler('rossracing:setNicknameAndJoin', function(circuitName, nickname)
+    local src = source
+    local Passport = vRP.Passport(src)
+
     if Passport and nickname and nickname ~= "" then
-        -- Validação simples (embora o client limite, é bom checar)
+        -- Tentar salvar (INSERT IGNORE garante que não sobrescreve se já existir)
         if string.len(nickname) >= 3 and string.len(nickname) <= 20 then
             vRP.Query("rossracing/set_nickname", { user_id = Passport, nickname = nickname })
         end
     end
+    
+    -- Prosseguir para o lobby
+    ProcessRaceJoin(src, circuitName)
+end)
 
+-- Função Principal de Entrada (Refatorada)
+function ProcessRaceJoin(source, circuitName)
+    local src = source
+    
     if raceCooldowns[circuitName] and raceCooldowns[circuitName] > 0 then
         TriggerClientEvent('rossracing:notify', src, string.format(Config.Lang['race_cooldown'], raceCooldowns[circuitName]))
         return
@@ -149,16 +175,6 @@ AddEventHandler('rossracing:requestStart', function(circuitName, nickname)
             if Config.ServerRemoveItem(src, Config.TicketItem, 1) then
                 activeRace.players[src] = { startTime = 0, finishTime = 0 }
                 TriggerClientEvent('rossracing:notify', src, Config.Lang['joined_lobby'])
-                
-                -- Notificar outros
-                local timeLeft = 0 -- TODO: Pegar tempo real
-                -- Mas como o loop do timer já roda em outra thread, vamos apenas mandar o evento de updateLobby no proximo tick do loop principal
-                -- Ou podemos forçar um update imediato se tivermos acesso ao timeLeft (variavel local da outra thread)
-                -- Como não temos acesso direto, o cliente receberá o update no próximo segundo.
-                
-                -- Gambiarra segura: O cliente vai receber o tempo no próximo segundo pelo loop principal.
-                -- Mas para garantir feedback imediato, vamos mandar um tempo estimado ou esperar o loop.
-                -- Melhor: O loop principal do lobby envia update a cada segundo. O player novo vai receber em <1s.
                 
                 for pid, _ in pairs(activeRace.players) do
                     if pid ~= src then
@@ -225,7 +241,7 @@ AddEventHandler('rossracing:requestStart', function(circuitName, nickname)
     else
         TriggerClientEvent('rossracing:notify', src, Config.Lang['need_ticket'])
     end
-end)
+end
 
 -- Finalizar Corrida (Sucesso)
 RegisterNetEvent('rossracing:finishRace')

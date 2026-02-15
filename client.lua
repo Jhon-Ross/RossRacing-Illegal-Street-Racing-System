@@ -107,10 +107,8 @@ Citizen.CreateThread(function()
                         if IsPedInAnyVehicle(plyPed, false) and GetPedInVehicleSeat(GetVehiclePedIsIn(plyPed, false), -1) == plyPed then
                             DrawText3D(circuit.startCoords.x, circuit.startCoords.y, circuit.startCoords.z + 1.0, Config.Lang['start_race_help'] .. "\n~b~[G] Ranking")
                             if IsControlJustPressed(0, 38) then -- E
-                                local nickname = KeyboardInput("Digite seu Vulgo/Apelido (Max 20 chars):", "", 20)
-                                if nickname then
-                                    TriggerServerEvent('rossracing:requestStart', name, nickname)
-                                end
+                                -- Solicita ao servidor para verificar se precisa de apelido
+                                TriggerServerEvent('rossracing:checkAndJoin', name)
                             end
                             if IsControlJustPressed(0, 47) then -- G
                                 TriggerServerEvent('rossracing:getRankingData', name)
@@ -463,6 +461,18 @@ function DrawCenterText(text, color, scale)
     AddTextComponentString(text)
     DrawText(0.5, 0.4)
 end
+
+-- Novo Evento para abrir Input somente quando necessário
+RegisterNetEvent('rossracing:openNicknameInput')
+AddEventHandler('rossracing:openNicknameInput', function(circuitName)
+    local nickname = KeyboardInput("Digite seu Vulgo/Apelido (Max 20 chars):", "", 20)
+    if nickname then
+        TriggerServerEvent('rossracing:setNicknameAndJoin', circuitName, nickname)
+    else
+        -- Se cancelar, não entra
+        TriggerEvent('rossracing:notify', "Você precisa definir um apelido para correr.")
+    end
+end)
 
 function KeyboardInput(text, example, maxLength)
     AddTextEntry('FMMC_KEY_TIP1', text)
