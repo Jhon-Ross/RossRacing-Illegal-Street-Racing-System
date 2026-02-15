@@ -14,12 +14,12 @@ Para ter acesso ao script funcional (com `server.lua` completo e ofuscado), entr
 ---
 
 ### Destaques do Sistema
-*   **🏆 Ranking Global e Pessoal (SQL):** Salva automaticamente os melhores tempos no banco de dados. Visualize o Top 10 de cada pista ingame.
+*   **🏆 Ranking Global e Pessoal (SQL):** Salva automaticamente os melhores tempos no banco de dados. Visualize o Top 10 de cada pista ingame com sistema de apelidos persistentes.
 *   **🏎️ Lobby Multiplayer:** Suporte para corridas com múltiplos jogadores sincronizados. Largada conjunta!
 *   **💣 Corrida Hardcore:** Se o tempo acabar ou você abandonar o veículo, o carro explode.
 *   **🎟️ Sistema de Tickets:** Acesso restrito via compra de tickets com NPC usando dinheiro sujo.
 *   **👮 Integração Policial:** A presença de policiais aumenta a recompensa (Risco x Recompensa).
-*   **📊 Interface Visual (HUD):** Textos 3D interativos, contagem regressiva estilo corrida, e notificações de vitória/recorde dedicadas.
+*   **📊 Interface Visual (HUD):** Textos 3D interativos, contagem regressiva estilo corrida, e notificações de vitória/recorde dedicadas com efeitos sonoros.
 *   **🔄 Totalmente Configurável:** Coordenadas, preços, tempos, mensagens e integração com qualquer base (ESX, QBCore, vRP, Creative).
 
 ---
@@ -51,6 +51,10 @@ Para iniciar uma corrida, o jogador precisa de um **Ticket de Corrida**.
 
 ## 🛠️ Instalação e Requisitos
 
+### Pré-requisitos
+*   **vRP / Creative / ESX / QBCore** (Bridge configurável em `config.lua`)
+*   **oxmysql / mysql-async** (Para salvar o ranking)
+
 ### 1. Banco de Dados (Obrigatório)
 Para que o sistema de Ranking funcione, você **DEVE** executar o arquivo SQL no seu banco de dados.
 1.  Abra seu gerenciador SQL (HeidiSQL, phpMyAdmin).
@@ -70,7 +74,8 @@ Edite `circuitos.lua` para criar novas rotas. O sistema é modular e aceita infi
 
 ## 📂 Estrutura de Arquivos
 *   `client.lua`: Lógica do cliente (HUD, Lobby, Markers, Explosão) - **Disponível**.
-*   `server.lua`: Arquivo de demonstração (Stub). **Versão completa disponível apenas para compradores.**
+*   `server.lua`: Arquivo de demonstração (Stub) ou funcional. **Versão completa disponível apenas para compradores.**
+*   `server-vetrine.lua`: Arquivo de demonstração (Stub) para exibição pública.
 *   `config.lua`: Configurações gerais e Bridge - **Disponível**.
 *   `circuitos.lua`: Definição das pistas - **Disponível**.
 *   `ranking.sql`: Estrutura do banco de dados para os recordes - **Disponível**.
@@ -80,7 +85,7 @@ Edite `circuitos.lua` para criar novas rotas. O sistema é modular e aceita infi
 ## 📝 Logs e Monitoramento
 O sistema gera logs no Discord para:
 *   Compra de Ticket.
-*   Início de Corrida (com lista de participantes).
+*   Início de Corrida (com lista de participantes e policiais online).
 *   Resultado Final (Vencedor, Tempos, Prêmios).
 *   Falhas e Cancelamentos.
 
