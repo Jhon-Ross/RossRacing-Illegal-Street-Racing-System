@@ -8,3 +8,9 @@ CREATE TABLE IF NOT EXISTS `rossracing_ranking` (
   PRIMARY KEY (`circuit`,`user_id`),
   INDEX `idx_circuit_time` (`circuit`, `time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `rossracing_nicknames` (
+  `user_id` int(11) NOT NULL,
+  `nickname` varchar(50) NOT NULL,
+  PRIMARY KEY (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
