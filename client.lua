@@ -125,16 +125,46 @@ end)
 
 -- Evento Start Race Countdown
 RegisterNetEvent('rossracing:startCountdown')
-AddEventHandler('rossracing:startCountdown', function(seconds, circuitData, raceId)
+AddEventHandler('rossracing:startCountdown', function(seconds, circuitData, raceId, gridIndex)
     local plyPed = PlayerPedId()
     local veh = GetVehiclePedIsIn(plyPed, false)
     
     if not veh then return end
 
+    -- Default grid index if not provided
+    gridIndex = gridIndex or 1
+
+    -- Calculate Grid Position
+    local spawnCoords = circuitData.spawnCoords
+    local h = spawnCoords.w
+    local rad = math.rad(h)
+    
+    -- Vectors
+    local forward = vector3(-math.sin(rad), math.cos(rad), 0)
+    local right = vector3(math.cos(rad), math.sin(rad), 0)
+    
+    -- Grid Configuration
+    local col = (gridIndex - 1) % 2 -- 0 = Left, 1 = Right
+    local row = math.floor((gridIndex - 1) / 2)
+    
+    -- Espaçamento Aumentado
+    local sideSpacing = 4.0 -- 4 metros do centro (8 metros de largura total)
+    local rowSpacing = 12.0 -- 12 metros entre linhas (para caber carros grandes)
+    local stagger = 6.0 -- 6 metros de recuo para a coluna da direita
+    
+    local sideOffset = (col == 0) and -sideSpacing or sideSpacing
+    local backOffset = (row * rowSpacing) + (col * stagger)
+    
+    local finalPos = vector3(spawnCoords.x, spawnCoords.y, spawnCoords.z) + (right * sideOffset) - (forward * backOffset)
+
     -- Posicionar carro
-    SetEntityCoords(veh, circuitData.spawnCoords.x, circuitData.spawnCoords.y, circuitData.spawnCoords.z)
-    SetEntityHeading(veh, circuitData.spawnCoords.w)
+    SetEntityCoords(veh, finalPos.x, finalPos.y, finalPos.z)
+    SetEntityHeading(veh, spawnCoords.w)
+    SetVehicleOnGroundProperly(veh)
     FreezeEntityPosition(veh, true)
+    
+    -- Desativar Colisão Temporária (Ghost Mode)
+    SetEntityCollision(veh, false, true)
 
     currentRace = {
         id = raceId,
@@ -173,6 +203,28 @@ AddEventHandler('rossracing:startCountdown', function(seconds, circuitData, race
     
     -- Config.ShowNotification(Config.TriggerClientEvent('rossracing:notify', src, string.format(Config.Lang['lobby_created'], Config.LobbyDuration))ang['race_started'])
     FreezeEntityPosition(veh, false)
+    
+    -- Reativar Colisão após 10 segundos (Ghost Mode)
+    Citizen.CreateThread(function()
+        local ghostTimer = 10000 -- 10 segundos
+        local startTime = GetGameTimer()
+        
+        while GetGameTimer() - startTime < ghostTimer do
+            Citizen.Wait(1000)
+            if DoesEntityExist(veh) then
+                -- Opcional: Efeito visual de alpha para indicar ghost mode
+                SetEntityAlpha(veh, 150, false)
+            else
+                break
+            end
+        end
+        
+        if DoesEntityExist(veh) then
+            SetEntityCollision(veh, true, true)
+            ResetEntityAlpha(veh)
+            TriggerEvent('rossracing:notify', "~g~COLISÃO ATIVADA!")
+        end
+    end)
     
     StartRaceLogic()
 end)
@@ -487,3 +539,12 @@ AddEventHandler('rossracing:showResult', function(data)
         end
     end)
 end)
+--[[ 
+ ██████╗  ██████╗ ███████╗███████╗ 
+ ██╔══██╗██╔═══██╗██╔════╝██╔════╝ 
+ ██████╔╝██║   ██║███████╗███████╗ 
+ ██╔══██╗██║   ██║╚════██║╚════██║ 
+ ██║  ██║╚██████╔╝███████║███████║ 
+ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝ 
+ Illegal Street Racing System - by ROSS 
+ ]]
