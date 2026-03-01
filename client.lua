@@ -122,8 +122,7 @@ Citizen.CreateThread(function()
                         if IsPedInAnyVehicle(plyPed, false) and GetPedInVehicleSeat(GetVehiclePedIsIn(plyPed, false), -1) == plyPed then
                             DrawText3D(circuit.startCoords.x, circuit.startCoords.y, circuit.startCoords.z + 1.0, Config.Lang['start_race_help'] .. "\n~b~[G] Ranking")
                             if IsControlJustPressed(0, 38) then -- E
-                                -- Solicita ao servidor para verificar se precisa de apelido
-                                TriggerServerEvent('rossracing:checkAndJoin', name)
+                                TriggerServerEvent('rossracing:requestStart', name)
                             end
                             if IsControlJustPressed(0, 47) then -- G
                                 TriggerServerEvent('rossracing:getRankingData', name)
@@ -150,32 +149,37 @@ AddEventHandler('rossracing:startCountdown', function(seconds, circuitData, race
     -- Default grid index if not provided
     gridIndex = gridIndex or 1
 
+    -- Calculate Grid Position
     local spawnCoords = circuitData.spawnCoords
     local h = spawnCoords.w
     local rad = math.rad(h)
+    
+    -- Vectors
     local forward = vector3(-math.sin(rad), math.cos(rad), 0)
     local right = vector3(math.cos(rad), math.sin(rad), 0)
-    local col = (gridIndex - 1) % 2
+    
+    -- Grid Configuration
+    local col = (gridIndex - 1) % 2 -- 0 = Left, 1 = Right
     local row = math.floor((gridIndex - 1) / 2)
-    local sideSpacing = 4.0
-    local rowSpacing = 12.0
-    local stagger = 0.0
+    
+    -- Espaçamento Aumentado
+    local sideSpacing = 4.0 -- 4 metros do centro (8 metros de largura total)
+    local rowSpacing = 12.0 -- 12 metros entre linhas (para caber carros grandes)
+    local stagger = 6.0 -- 6 metros de recuo para a coluna da direita
+    
     local sideOffset = (col == 0) and -sideSpacing or sideSpacing
     local backOffset = (row * rowSpacing) + (col * stagger)
+    
     local finalPos = vector3(spawnCoords.x, spawnCoords.y, spawnCoords.z) + (right * sideOffset) - (forward * backOffset)
 
-    if circuitData.gridPositions and circuitData.gridPositions[gridIndex] then
-        local gp = circuitData.gridPositions[gridIndex]
-        SetEntityCoords(veh, gp.x, gp.y, gp.z)
-        SetEntityHeading(veh, gp.w)
-    else
-        SetEntityCoords(veh, finalPos.x, finalPos.y, finalPos.z)
-        SetEntityHeading(veh, spawnCoords.w)
-    end
+    -- Posicionar carro
+    SetEntityCoords(veh, finalPos.x, finalPos.y, finalPos.z)
+    SetEntityHeading(veh, spawnCoords.w)
     SetVehicleOnGroundProperly(veh)
     FreezeEntityPosition(veh, true)
     
-    SetEntityCollision(veh, true, true)
+    -- Desativar Colisão Temporária (Ghost Mode)
+    SetEntityCollision(veh, false, true)
 
     currentRace = {
         id = raceId,
@@ -215,7 +219,27 @@ AddEventHandler('rossracing:startCountdown', function(seconds, circuitData, race
     -- Config.ShowNotification(Config.TriggerClientEvent('rossracing:notify', src, string.format(Config.Lang['lobby_created'], Config.LobbyDuration))ang['race_started'])
     FreezeEntityPosition(veh, false)
     
-    SetEntityCollision(veh, true, true)
+    -- Reativar Colisão após 10 segundos (Ghost Mode)
+    Citizen.CreateThread(function()
+        local ghostTimer = 10000 -- 10 segundos
+        local startTime = GetGameTimer()
+        
+        while GetGameTimer() - startTime < ghostTimer do
+            Citizen.Wait(1000)
+            if DoesEntityExist(veh) then
+                -- Opcional: Efeito visual de alpha para indicar ghost mode
+                SetEntityAlpha(veh, 150, false)
+            else
+                break
+            end
+        end
+        
+        if DoesEntityExist(veh) then
+            SetEntityCollision(veh, true, true)
+            ResetEntityAlpha(veh)
+            TriggerEvent('rossracing:notify', "~g~COLISÃO ATIVADA!")
+        end
+    end)
     
     StartRaceLogic()
 end)
@@ -352,9 +376,8 @@ function StartRaceLogic()
             Draw2DText(0.5, 0.9, "~y~TEMPO RESTANTE:~w~ " .. timeRemaining .. "s", 0.6)
 
             if (GetGameTimer() - currentRace.startTime) > currentRace.maxTime then
-                -- Config.ShowNotification(Config.Lang['race_failed'])
-                -- Config.ShowNotification("SAIA DO VEÍCULO! EXPLOSÃO EM 5 SEGUNDOS!")
-                TriggerEvent('rossracing:notify', Config.Lang['race_failed'])
+                Config.ShowNotification(Config.Lang['race_failed'])
+                Config.ShowNotification("SAIA DO VEÍCULO! EXPLOSÃO EM 5 SEGUNDOS!")
                 
                 -- Tempo extra para fugir
                 local failTimer = 5
@@ -477,34 +500,6 @@ function DrawCenterText(text, color, scale)
     DrawText(0.5, 0.4)
 end
 
--- Novo Evento para abrir Input somente quando necessário
-RegisterNetEvent('rossracing:openNicknameInput')
-AddEventHandler('rossracing:openNicknameInput', function(circuitName)
-    local nickname = KeyboardInput("Digite seu Vulgo/Apelido (Max 20 chars):", "", 20)
-    if nickname then
-        TriggerServerEvent('rossracing:setNicknameAndJoin', circuitName, nickname)
-    else
-        -- Se cancelar, não entra
-        TriggerEvent('rossracing:notify', "Você precisa definir um apelido para correr.")
-    end
-end)
-
-function KeyboardInput(text, example, maxLength)
-    AddTextEntry('FMMC_KEY_TIP1', text)
-    DisplayOnscreenKeyboard(1, "FMMC_KEY_TIP1", "", example, "", "", "", maxLength)
-    while UpdateOnscreenKeyboard() ~= 1 and UpdateOnscreenKeyboard() ~= 2 do
-        Citizen.Wait(0)
-    end
-    if UpdateOnscreenKeyboard() ~= 2 then
-        local result = GetOnscreenKeyboardResult()
-        Citizen.Wait(500)
-        return result
-    else
-        Citizen.Wait(500)
-        return nil
-    end
-end
-
 -- Evento Visual de Resultado (Vitória)
 RegisterNetEvent('rossracing:showResult')
 AddEventHandler('rossracing:showResult', function(data)
@@ -559,3 +554,12 @@ AddEventHandler('rossracing:showResult', function(data)
         end
     end)
 end)
+--[[ 
+ ██████╗  ██████╗ ███████╗███████╗ 
+ ██╔══██╗██╔═══██╗██╔════╝██╔════╝ 
+ ██████╔╝██║   ██║███████╗███████╗ 
+ ██╔══██╗██║   ██║╚════██║╚════██║ 
+ ██║  ██║╚██████╔╝███████║███████║ 
+ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝ 
+ Illegal Street Racing System - by ROSS 
+ ]]

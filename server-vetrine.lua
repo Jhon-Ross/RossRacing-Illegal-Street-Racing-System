@@ -81,3 +81,13 @@ AddEventHandler('rossracing:failRace', function(raceId, reason)
     -- [CÓDIGO PROTEGIDO NA VERSÃO PAGA]
     -- Registra log de falha/desistência.
 end)
+
+--[[ 
+ ██████╗  ██████╗ ███████╗███████╗ 
+ ██╔══██╗██╔═══██╗██╔════╝██╔════╝ 
+ ██████╔╝██║   ██║███████╗███████╗ 
+ ██╔══██╗██║   ██║╚════██║╚════██║ 
+ ██║  ██║╚██████╔╝███████║███████║ 
+ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚══════╝ 
+ Illegal Street Racing System - by ROSS 
+ ]]
