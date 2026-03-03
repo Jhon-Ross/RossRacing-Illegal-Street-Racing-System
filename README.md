@@ -8,7 +8,7 @@
 ---
 
 ### 🚀 **Compre agora / Suporte**
-[![Discord](https://img.shields.io/discord/1075931346765275156?color=7289da&label=Discord&logo=discord&style=for-the-badge)](https://discord.com/invite/Tax7zUGy7C)
+[![Discord](https://img.shields.io/badge/Discord-Entrar_Agora-7289da?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/invite/Tax7zUGy7C)
 > **[Clique aqui para entrar no Discord](https://discord.com/invite/Tax7zUGy7C)**
 
 ---
